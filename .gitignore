@@ -103,6 +103,7 @@ $RECYCLE.BIN/
 .env.*
 
 # IDE
+.vscode
 .vscode/
 .idea/
 *.swp
