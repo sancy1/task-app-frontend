@@ -24,11 +24,11 @@ I developed the mobile application using the following tools and technologies:
 The primary programming language used is TypeScript with React Native, providing static typing, excellent editor support, and improved code maintainability. The frontend leverages modern React hooks for state management and functional components.
 
 # **Frontend Useful Websites**
-**- React Native Documentation:** https://reactnative.dev/docs/getting-started
-**- Expo Documentation:** https://docs.expo.dev/
-**- React Native Networking:** https://reactnative.dev/docs/network
-**- Using TypeScript with React Native:** https://reactnative.dev/docs/typescript
-**- MDN Web Docs – Fetch API:** https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
+- React Native Documentation: https://reactnative.dev/docs/getting-started
+- Expo Documentation: https://docs.expo.dev/
+- React Native Networking: https://reactnative.dev/docs/network
+- Using TypeScript with React Native: https://reactnative.dev/docs/typescript
+- MDN Web Docs – Fetch API: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
 
 # **Frontend Notes**
 - The mobile app successfully consumes the API running locally and displays responses on both Android emulators and physical devices
