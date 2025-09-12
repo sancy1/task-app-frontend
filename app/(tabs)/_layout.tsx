@@ -11,6 +11,13 @@ import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+// Centralized tab configuration
+const TAB_SCREENS = [
+  { name: 'index', title: 'Home', icon: 'house.fill' },
+  { name: 'tasks', title: 'Tasks', icon: 'list.bullet' },
+  { name: 'explore', title: 'Explore', icon: 'paperplane.fill' },
+];
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
@@ -22,27 +29,23 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
+          ios: { position: 'absolute' }, // Transparent background on iOS for blur
           default: {},
         }),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
+      }}
+    >
+      {TAB_SCREENS.map(({ name, title, icon }) => (
+        <Tabs.Screen
+          key={name}
+          name={name}
+          options={{
+            title,
+            tabBarIcon: ({ color }) => (
+              <IconSymbol size={28} name={icon} color={color} />
+            ),
+          }}
+        />
+      ))}
     </Tabs>
   );
 }
