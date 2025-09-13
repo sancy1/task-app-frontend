@@ -6,7 +6,7 @@ import { View, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-nativ
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedTextInput } from '@/components/ThemedTextInput';
-import { useAuth } from '@/src/contexts/AuthContext'; // FIXED IMPORT PATH
+import { useAuth } from '@/src/contexts/AuthContext';
 import { useRouter, type Href } from 'expo-router';
 
 export default function LoginScreen() {
@@ -40,9 +40,14 @@ export default function LoginScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.form}>
-        <ThemedText type="title" style={styles.title}>
-          Welcome Back
-        </ThemedText>
+        <View style={styles.header}>
+          <ThemedText type="title">
+            Note Taking App
+          </ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Welcome Back | Login
+          </ThemedText>
+        </View>
 
         <ThemedTextInput
           placeholder="Email"
@@ -96,6 +101,15 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
     marginBottom: 24,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 4,
   },
   input: {
     height: 50,
