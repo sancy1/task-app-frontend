@@ -1,8 +1,6 @@
 
 // src/types/task.ts
 
-// src/types/task.ts
-
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'archived';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 

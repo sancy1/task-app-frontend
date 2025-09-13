@@ -1,69 +1,64 @@
 
-// // app/task/[id]/edit.tsx
 
-// // app/task/[id]/edit.tsx
-// if (__DEV__) {
-//   console.log('>>> Rendering Task Edit page');
-// }
+// app/task/[id]/edit.tsx
 
-// import React, { useEffect, useState } from 'react';
-// import { StyleSheet } from 'react-native';
-// import { useLocalSearchParams, useRouter } from 'expo-router';
-// import { ThemedView } from '@/components/ThemedView';
-// import { ThemedText } from '@/components/ThemedText';
-// import { ProtectedRoute } from '@/components/ProtectedRoute';
-// import { useTasks } from '@/src/contexts/TaskContext';
-// import { TaskForm, TaskFormValues } from '@/components/TaskForm';
-// import { Task } from '@/src/types/task';
+import React from 'react';
+import { StyleSheet } from 'react-native';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { TaskEditForm } from '@/components/TaskEditForm';
+import { useTasks } from '@/src/contexts/TaskContext';
 
-// export default function TaskEditScreen() {
-//   const { id } = useLocalSearchParams<{ id: string }>();
-//   const router = useRouter();
-//   const { tasks, updateTask } = useTasks();
-//   const [task, setTask] = useState<Task | null>(null);
+export default function EditTaskScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const { tasks } = useTasks();
 
-//   useEffect(() => {
-//     const found = tasks.find((t) => t.id === id);
-//     if (found) setTask(found);
-//   }, [id, tasks]);
+  const task = tasks.find(t => t.id === id);
 
-//   if (!task) {
-//     return (
-//       <ProtectedRoute>
-//         <ThemedView style={styles.center}>
-//           <ThemedText>Task not found</ThemedText>
-//         </ThemedView>
-//       </ProtectedRoute>
-//     );
-//   }
+  // ✅ Always go to tasks page (prevents GO_BACK warning)
+  const handleExit = () => {
+    router.replace('/tasks');
+  };
 
-//   // Normalize Task → TaskFormValues
-//   const normalizedTask: Partial<TaskFormValues> = {
-//     id: task.id,
-//     title: task.title ?? '',
-//     description: task.description ?? undefined,
-//     status: task.status ?? undefined,
-//     priority: task.priority ?? undefined,
-//     due_date: task.due_date ?? undefined,
-//   };
+  if (!task) {
+    return (
+      <ProtectedRoute>
+        <ThemedView style={styles.center}>
+          <ThemedText>Task not found</ThemedText>
+        </ThemedView>
+      </ProtectedRoute>
+    );
+  }
 
-//   return (
-//     <ProtectedRoute>
-//       <ThemedView style={{ flex: 1 }}>
-//         <TaskForm
-//           mode="update"
-//           initialData={normalizedTask}
-//           onSubmit={async (data) => {
-//             await updateTask(task.id, data);
-//             router.replace(`/task/${task.id}`);
-//           }}
-//           onCancel={() => router.back()}
-//         />
-//       </ThemedView>
-//     </ProtectedRoute>
-//   );
-// }
+  const normalized = {
+    title: task.title,
+    description: task.description ?? undefined,
+    status: task.status ?? undefined,
+    priority: task.priority ?? undefined,
+    due_date: task.due_date ?? undefined,
+  };
 
-// const styles = StyleSheet.create({
-//   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-// });
+  return (
+    <ProtectedRoute>
+      {/* ✅ Custom header */}
+      <Stack.Screen options={{ title: 'Go Back' }} />
+
+      <ThemedView style={styles.container}>
+        <TaskEditForm
+          taskId={task.id}
+          initialData={normalized}
+          onSubmit={handleExit}
+          onCancel={handleExit}
+        />
+      </ThemedView>
+    </ProtectedRoute>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+});

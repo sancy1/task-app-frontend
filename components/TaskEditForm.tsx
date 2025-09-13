@@ -1,5 +1,5 @@
 
-// src/components/TaskForm.tsx
+// components/TaskEditForm.tsx - UPDATED VERSION
 
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
@@ -7,32 +7,32 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedTextInput } from '@/components/ThemedTextInput';
 import { useTasks } from '@/src/contexts/TaskContext';
-import { TaskStatus, TaskPriority } from '@/src/types/task';
+import { TaskStatus, TaskPriority, UpdateTaskData } from '@/src/types/task';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useRouter } from 'expo-router';
 
-// ✅ Define form values shape for external usage
-export interface TaskFormValues {
-  id?: string;
-  title: string;
-  description?: string;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  due_date?: string;
-}
-
-interface TaskFormProps {
-  onSubmit?: (data: TaskFormValues) => void | Promise<void>;
+interface TaskEditFormProps {
+  taskId: string;
+  initialData: {
+    title: string;
+    description?: string;
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    due_date?: string;
+  };
+  onSubmit?: () => void;
   onCancel?: () => void;
-  initialData?: Partial<TaskFormValues>;
-  mode?: "create" | "update";   // ✅ new
 }
 
-export const TaskForm: React.FC<TaskFormProps> = ({
+export const TaskEditForm: React.FC<TaskEditFormProps> = ({
+  taskId,
+  initialData,
   onSubmit,
   onCancel,
-  initialData,
-  mode,
 }) => {
+  const { updateTask } = useTasks();
+  const router = useRouter();
+
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [description, setDescription] = useState(initialData?.description ?? '');
   const [status, setStatus] = useState<TaskStatus>(initialData?.status ?? 'pending');
@@ -41,18 +41,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { createTask, updateTask } = useTasks();
-
-  // ✅ If mode is passed, it takes priority; else fallback to id detection
-  const isEditing = mode === "update" || Boolean(initialData?.id);
-
   const handleSubmit = async () => {
     if (!title.trim()) {
       Alert.alert('Error', 'Title is required');
       return;
     }
 
-    const payload: TaskFormValues = {
+    const payload: UpdateTaskData = {
       title: title.trim(),
       description: description.trim() || undefined,
       status,
@@ -62,13 +57,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
     setLoading(true);
     try {
-      if (isEditing && initialData?.id) {
-        await updateTask(initialData.id, payload);
-      } else {
-        await createTask(payload);
-      }
-
-      await onSubmit?.(payload);
+      await updateTask(taskId, payload);
+      onSubmit?.();
+      router.back(); // Navigate back after successful update
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -76,14 +67,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     }
   };
 
-  const priorityOptions: { value: TaskPriority; label: string; color: string }[] = [
+  const priorityOptions = [
     { value: 'low', label: 'Low', color: '#10B981' },
     { value: 'medium', label: 'Medium', color: '#F59E0B' },
     { value: 'high', label: 'High', color: '#EF4444' },
     { value: 'urgent', label: 'Urgent', color: '#DC2626' },
   ];
 
-  const statusOptions: { value: TaskStatus; label: string; color: string }[] = [
+  const statusOptions = [
     { value: 'pending', label: 'Pending', color: '#6B7280' },
     { value: 'in_progress', label: 'In Progress', color: '#3B82F6' },
     { value: 'completed', label: 'Completed', color: '#10B981' },
@@ -92,9 +83,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView>
         <ThemedText type="subtitle" style={styles.title}>
-          {isEditing ? 'Edit Task' : 'Create New Task'}
+          Edit Task
         </ThemedText>
 
         <ThemedTextInput
@@ -102,134 +93,107 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           value={title}
           onChangeText={setTitle}
           style={styles.input}
-          maxLength={255}
         />
 
         <ThemedTextInput
-          placeholder="Description (optional)"
+          placeholder="Description"
           value={description}
           onChangeText={setDescription}
           style={[styles.input, styles.textArea]}
           multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-          maxLength={1000}
         />
 
-        {/* Status Selection Section */}
+        {/* Status */}
         <View style={styles.section}>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            Status
-          </ThemedText>
+          <ThemedText type="defaultSemiBold">Status</ThemedText>
           <View style={styles.optionsContainer}>
-            {statusOptions.map((option) => (
+            {statusOptions.map((opt) => (
               <TouchableOpacity
-                key={option.value}
+                key={opt.value}
                 style={[
                   styles.optionButton,
-                  status === option.value && styles.optionButtonSelected,
-                  { borderColor: option.color },
+                  status === opt.value && styles.optionButtonSelected,
+                  { borderColor: opt.color },
                 ]}
-                onPress={() => setStatus(option.value)}
+                onPress={() => setStatus(opt.value as TaskStatus)}
               >
                 <ThemedText
                   style={[
                     styles.optionText,
-                    status === option.value && { color: option.color, fontWeight: '600' },
+                    status === opt.value && { color: opt.color, fontWeight: '600' },
                   ]}
                 >
-                  {option.label}
+                  {opt.label}
                 </ThemedText>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Priority Selection Section */}
+        {/* Priority */}
         <View style={styles.section}>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            Priority
-          </ThemedText>
+          <ThemedText type="defaultSemiBold">Priority</ThemedText>
           <View style={styles.optionsContainer}>
-            {priorityOptions.map((option) => (
+            {priorityOptions.map((opt) => (
               <TouchableOpacity
-                key={option.value}
+                key={opt.value}
                 style={[
                   styles.optionButton,
-                  priority === option.value && styles.optionButtonSelected,
-                  { borderColor: option.color },
+                  priority === opt.value && styles.optionButtonSelected,
+                  { borderColor: opt.color },
                 ]}
-                onPress={() => setPriority(option.value)}
+                onPress={() => setPriority(opt.value as TaskPriority)}
               >
                 <ThemedText
                   style={[
                     styles.optionText,
-                    priority === option.value && { color: option.color, fontWeight: '600' },
+                    priority === opt.value && { color: opt.color, fontWeight: '600' },
                   ]}
                 >
-                  {option.label}
+                  {opt.label}
                 </ThemedText>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Due Date Selection */}
+        {/* Due Date */}
         <View style={styles.section}>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            Due Date
-          </ThemedText>
+          <ThemedText type="defaultSemiBold">Due Date</ThemedText>
           <TouchableOpacity
             style={[styles.input, styles.dateInput]}
             onPress={() => setShowDatePicker(true)}
           >
             <ThemedText style={{ color: dueDate ? '#111' : '#9CA3AF' }}>
-              {dueDate ? new Date(dueDate).toLocaleDateString() : 'Select Due Date (optional)'}
+              {dueDate ? new Date(dueDate).toLocaleDateString() : 'Select due date'}
             </ThemedText>
           </TouchableOpacity>
-
           {showDatePicker && (
             <DateTimePicker
               value={dueDate ? new Date(dueDate) : new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, selectedDate) => {
+              onChange={(e, d) => {
                 setShowDatePicker(false);
-                if (selectedDate) {
-                  setDueDate(selectedDate.toISOString());
-                }
+                if (d) setDueDate(d.toISOString());
               }}
             />
           )}
         </View>
 
-        {/* Action Buttons */}
+        {/* Buttons */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton]}
-            onPress={onCancel}
-            disabled={loading}
-          >
-            <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+          <TouchableOpacity style={[styles.button, styles.cancel]} onPress={onCancel}>
+            <ThemedText>Cancel</ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.button,
-              styles.submitButton,
-              (!title.trim() || loading) && styles.buttonDisabled,
-            ]}
+            style={[styles.button, styles.submit, (!title.trim() || loading) && styles.disabled]}
             onPress={handleSubmit}
             disabled={!title.trim() || loading}
           >
-            <ThemedText style={styles.submitButtonText}>
-              {loading
-                ? isEditing
-                  ? 'Updating...'
-                  : 'Creating...'
-                : isEditing
-                ? 'Update Task'
-                : 'Create Task'}
+            <ThemedText style={{ color: 'white', fontWeight: '600' }}>
+              {loading ? 'Updating…' : 'Update Task'}
             </ThemedText>
           </TouchableOpacity>
         </View>
@@ -240,77 +204,32 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-  scrollView: { flex: 1 },
-  title: { textAlign: 'center', marginBottom: 24 },
+  title: { textAlign: 'center', marginBottom: 16 },
   input: {
-    height: 50,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    marginBottom: 16,
+    paddingHorizontal: 12,
+    height: 48,
+    marginBottom: 12,
     backgroundColor: 'white',
-    justifyContent: 'center',
   },
-  textArea: { height: 100, paddingTop: 12 },
-  dateInput: { justifyContent: 'center' },
+  textArea: { height: 90 },
   section: { marginBottom: 20 },
-  sectionTitle: { marginBottom: 12, fontSize: 16 },
   optionsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   optionButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 2,
     backgroundColor: 'white',
-    minWidth: 100,
-    alignItems: 'center',
   },
   optionButtonSelected: { backgroundColor: '#F3F4F6' },
-  optionText: { fontSize: 14, textAlign: 'center' },
-  buttonContainer: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  button: {
-    flex: 1,
-    height: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  submitButton: { backgroundColor: '#007AFF' },
-  buttonDisabled: { opacity: 0.6 },
-  cancelButtonText: { color: '#374151', fontWeight: '600' },
-  submitButtonText: { color: 'white', fontWeight: '600' },
+  optionText: { fontSize: 14 },
+  buttonContainer: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  button: { flex: 1, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  cancel: { backgroundColor: '#F3F4F6' },
+  submit: { backgroundColor: '#007AFF' },
+  disabled: { opacity: 0.5 },
+  dateInput: { justifyContent: 'center' },
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

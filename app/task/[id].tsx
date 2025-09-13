@@ -9,15 +9,13 @@ import { ThemedView } from '@/components/ThemedView';
 import { useTasks } from '@/src/contexts/TaskContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { TaskForm } from '@/components/TaskForm';
 import { Task } from '@/src/types/task';
 
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { tasks, updateTask, deleteTask, markAsCompleted, archiveTask } = useTasks();
+  const { tasks, deleteTask, markAsCompleted, archiveTask } = useTasks();
   const [task, setTask] = useState<Task | null>(null);
-  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     const found = tasks.find((t) => t.id === id);
@@ -48,33 +46,6 @@ export default function TaskDetailScreen() {
     );
   }
 
-  if (editing) {
-    // ✅ normalize Task to match TaskFormProps
-    const normalizedTask = {
-      id: task.id,
-      title: task.title ?? '',
-      description: task.description ?? undefined, // fix null → undefined
-      status: task.status ?? undefined,
-      priority: task.priority ?? undefined,
-      due_date: task.due_date ?? undefined,
-    };
-
-    return (
-      <ProtectedRoute>
-        <ThemedView style={{ flex: 1 }}>
-          <TaskForm
-            initialData={normalizedTask}
-            onSubmit={async (data) => {
-              await updateTask(task.id, data);
-              setEditing(false);
-            }}
-            onCancel={() => setEditing(false)}
-          />
-        </ThemedView>
-      </ProtectedRoute>
-    );
-  }
-
   return (
     <ProtectedRoute>
       <ScrollView style={styles.container}>
@@ -94,7 +65,10 @@ export default function TaskDetailScreen() {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => setEditing(true)}>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => router.push(`/task/${task.id}/edit`)}
+          >
             <IconSymbol name="pencil" size={20} color="white" />
             <ThemedText style={styles.actionText}>Edit</ThemedText>
           </TouchableOpacity>
@@ -147,6 +121,17 @@ const styles = StyleSheet.create({
   },
   actionText: { color: 'white', fontWeight: '600' },
 });
+
+
+
+
+
+
+
+
+
+
+
 
 
 

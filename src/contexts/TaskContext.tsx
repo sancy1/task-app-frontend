@@ -41,13 +41,14 @@
 //   const [error, setError] = useState<string | null>(null);
 //   const { accessToken } = useAuth();
 
+//   // ✅ always replace tasks with the latest server state
 //   const fetchTasks = async (filters?: TasksFilter) => {
 //     if (!accessToken) return;
 //     setLoading(true);
 //     setError(null);
 //     try {
 //       const tasksData = await taskAPI.getTasks(accessToken, filters);
-//       setTasks(tasksData);
+//       setTasks(tasksData); // ⬅️ replace instead of merging
 //     } catch (err: any) {
 //       setError(err.message);
 //     } finally {
@@ -61,7 +62,7 @@
 //     setError(null);
 //     try {
 //       const newTask = await taskAPI.createTask(accessToken, taskData);
-//       setTasks(prev => [newTask, ...prev]);
+//       setTasks(prev => [newTask, ...prev]); // prepend new task
 //       return newTask;
 //     } catch (err: any) {
 //       setError(err.message);
@@ -72,22 +73,21 @@
 //   };
 
 //   const updateTask = async (taskId: string, updates: UpdateTaskData): Promise<Task> => {
-//   if (!accessToken) throw new Error('No access token');
-//   setLoading(true);
-//   setError(null);
-//   try {
-//     const updatedTask = await taskAPI.updateTask(accessToken, taskId, updates);
-//     console.log("Updating task:", taskId, "→", updatedTask); // 🔍 debug
-//     setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
-//     return updatedTask;
-//   } catch (err: any) {
-//     setError(err.message);
-//     throw err;
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
+//     if (!accessToken) throw new Error('No access token');
+//     setLoading(true);
+//     setError(null);
+//     try {
+//       const updatedTask = await taskAPI.updateTask(accessToken, taskId, updates);
+//       // ✅ replace task inline so UI updates immediately
+//       setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+//       return updatedTask;
+//     } catch (err: any) {
+//       setError(err.message);
+//       throw err;
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
 //   const deleteTask = async (taskId: string): Promise<void> => {
 //     if (!accessToken) throw new Error('No access token');
@@ -175,22 +175,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // src/contexts/TaskContext.tsx
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
@@ -233,14 +217,14 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const { accessToken } = useAuth();
 
-  // ✅ always replace tasks with the latest server state
+  // ✅ Always fetch fresh list
   const fetchTasks = async (filters?: TasksFilter) => {
     if (!accessToken) return;
     setLoading(true);
     setError(null);
     try {
       const tasksData = await taskAPI.getTasks(accessToken, filters);
-      setTasks(tasksData); // ⬅️ replace instead of merging
+      setTasks(tasksData);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -254,7 +238,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     setError(null);
     try {
       const newTask = await taskAPI.createTask(accessToken, taskData);
-      setTasks(prev => [newTask, ...prev]); // prepend new task
+      setTasks(prev => [newTask, ...prev]); // ✅ prepend correctly
       return newTask;
     } catch (err: any) {
       setError(err.message);
@@ -270,8 +254,7 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     setError(null);
     try {
       const updatedTask = await taskAPI.updateTask(accessToken, taskId, updates);
-      // ✅ replace task inline so UI updates immediately
-      setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+      setTasks(prev => prev.map(task => (task.id === taskId ? updatedTask : task))); // ✅ inline replace
       return updatedTask;
     } catch (err: any) {
       setError(err.message);
@@ -299,28 +282,28 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
   const markAsCompleted = async (taskId: string): Promise<Task> => {
     if (!accessToken) throw new Error('No access token');
     const updatedTask = await taskAPI.markTaskAsCompleted(accessToken, taskId);
-    setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+    setTasks(prev => prev.map(task => (task.id === taskId ? updatedTask : task)));
     return updatedTask;
   };
 
   const markAsPending = async (taskId: string): Promise<Task> => {
     if (!accessToken) throw new Error('No access token');
     const updatedTask = await taskAPI.markTaskAsPending(accessToken, taskId);
-    setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+    setTasks(prev => prev.map(task => (task.id === taskId ? updatedTask : task)));
     return updatedTask;
   };
 
   const markAsInProgress = async (taskId: string): Promise<Task> => {
     if (!accessToken) throw new Error('No access token');
     const updatedTask = await taskAPI.markTaskAsInProgress(accessToken, taskId);
-    setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+    setTasks(prev => prev.map(task => (task.id === taskId ? updatedTask : task)));
     return updatedTask;
   };
 
   const archiveTask = async (taskId: string): Promise<Task> => {
     if (!accessToken) throw new Error('No access token');
     const updatedTask = await taskAPI.archiveTask(accessToken, taskId);
-    setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+    setTasks(prev => prev.map(task => (task.id === taskId ? updatedTask : task)));
     return updatedTask;
   };
 
@@ -341,9 +324,6 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
     clearError,
   };
 
-  return (
-    <TaskContext.Provider value={value}>
-      {children}
-    </TaskContext.Provider>
-  );
+  return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
 };
+
