@@ -1,4 +1,3 @@
-
 // app/(tabs)/tasks.tsx
 
 import React, { useState, useEffect } from 'react';
@@ -20,39 +19,59 @@ import { TasksFilter, TaskStatus } from '@/src/types/task';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
+/*
+  TasksScreen Component
+  ---------------------
+  This screen shows the full list of tasks. 
+  It includes:
+   - Filters (All, Pending, In Progress, Completed, Archived)
+   - Refresh control (pull to refresh)
+   - Error handling
+   - Empty state messages
+   - Task creation form (when adding a new task)
+   - A floating button to create new tasks
+*/
 export default function TasksScreen() {
+  // Context hooks for tasks and authentication
   const { tasks, loading, error, fetchTasks, clearError } = useTasks();
   const { accessToken } = useAuth();
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [filters, setFilters] = useState<TasksFilter>({});
 
+  // Local UI state
+  const [showCreateForm, setShowCreateForm] = useState(false); // Toggles task form
+  const [refreshing, setRefreshing] = useState(false); // For pull-to-refresh
+  const [filters, setFilters] = useState<TasksFilter>({}); // Holds active filters
+
+  // Load tasks whenever token or filters change
   useEffect(() => {
     if (accessToken) {
       loadTasks();
     }
   }, [accessToken, filters]);
 
+  // Function to fetch tasks with current filters
   const loadTasks = async () => {
     try {
       await fetchTasks(filters);
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Error', err.message); // Show error popup if fetch fails
     }
   };
 
+  // Pull-to-refresh handler
   const onRefresh = async () => {
     setRefreshing(true);
-    clearError(); // ✅ clear old errors
+    clearError(); //  Clear old errors before refreshing
     await loadTasks();
     setRefreshing(false);
   };
 
+  // Callback for when a new task is successfully created
   const handleCreateSuccess = () => {
     setShowCreateForm(false);
-    loadTasks();
+    loadTasks(); // Refresh tasks list
   };
 
+  // Filter options (each with label + icon + value)
   const filterOptions: { value: TaskStatus | undefined; label: string; icon: string }[] = [
     { value: undefined, label: 'All', icon: 'list.bullet' },
     { value: 'pending', label: 'Pending', icon: 'clock' },
@@ -61,12 +80,13 @@ export default function TasksScreen() {
     { value: 'archived', label: 'Archived', icon: 'archivebox' },
   ];
 
+  //  Show task form if user is adding a new task
   if (showCreateForm) {
     return (
       <ProtectedRoute>
         <TaskForm
-          onSubmit={handleCreateSuccess}
-          onCancel={() => setShowCreateForm(false)}
+          onSubmit={handleCreateSuccess} // Refresh after success
+          onCancel={() => setShowCreateForm(false)} // Close form without saving
         />
       </ProtectedRoute>
     );
@@ -75,12 +95,12 @@ export default function TasksScreen() {
   return (
     <ProtectedRoute>
       <ThemedView style={styles.container}>
-        {/* Title */}
+        {/* ================== HEADER ================== */}
         <View style={styles.header}>
           <ThemedText type="title">My Tasks</ThemedText>
         </View>
 
-        {/* Filters */}
+        {/* ================== FILTERS ================== */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -92,12 +112,12 @@ export default function TasksScreen() {
               key={filter.label}
               style={[
                 styles.filterButton,
-                filters.status === filter.value && styles.filterButtonActive,
+                filters.status === filter.value && styles.filterButtonActive, // Highlight active filter
               ]}
               onPress={() =>
                 setFilters((prev) => ({
                   ...prev,
-                  status: filter.value,
+                  status: filter.value, // Update filter state
                 }))
               }
             >
@@ -118,7 +138,7 @@ export default function TasksScreen() {
           ))}
         </ScrollView>
 
-        {/* Task list */}
+        {/* ================== TASK LIST ================== */}
         <ScrollView
           style={styles.tasksContainer}
           refreshControl={
@@ -126,11 +146,13 @@ export default function TasksScreen() {
           }
           contentContainerStyle={styles.tasksContent}
         >
+          {/* Show loader while fetching */}
           {loading && !refreshing ? (
             <View style={styles.center}>
               <ThemedText>Loading tasks...</ThemedText>
             </View>
           ) : error ? (
+            /* Show error message with retry option */
             <View style={styles.center}>
               <ThemedText style={styles.error}>Error: {error}</ThemedText>
               <TouchableOpacity onPress={loadTasks} style={styles.retryButton}>
@@ -138,6 +160,7 @@ export default function TasksScreen() {
               </TouchableOpacity>
             </View>
           ) : tasks.length === 0 ? (
+            /* Empty state message when no tasks match filter */
             <View style={styles.center}>
               <IconSymbol
                 name="list.bullet.clipboard"
@@ -156,16 +179,17 @@ export default function TasksScreen() {
               </ThemedText>
             </View>
           ) : (
+            // ✅ Render list of TaskCards
             tasks.map((task) => <TaskCard key={task.id} task={task} />)
           )}
         </ScrollView>
       </ThemedView>
 
-      {/* Floating Add Button at Bottom */}
+      {/* ================== FLOATING ADD BUTTON ================== */}
       <View style={styles.bottomButtonContainer}>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => setShowCreateForm(true)}
+          onPress={() => setShowCreateForm(true)} // Open form when pressed
         >
           <IconSymbol name="plus" size={24} color="white" />
         </TouchableOpacity>

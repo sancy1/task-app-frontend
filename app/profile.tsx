@@ -1,4 +1,14 @@
+
 // app/profile.tsx
+
+/*
+  Profile Screen
+  --------------
+  - Displays the logged-in user's profile information (name, email, initials).
+  - Fetches profile details from the backend API using the stored access token.
+  - Provides a logout button to end the session.
+  - Uses ProtectedRoute to ensure only authenticated users can access this page.
+*/
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
@@ -8,20 +18,29 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { authAPI } from '@/src/services/api';
-import { User } from '@/src/types/auth'; // ✅ assuming you already have User type
+import { User } from '@/src/types/auth'; //  strongly typed user object
 
 export default function ProfileScreen() {
+  // Access authentication context (for token + logout function)
   const { accessToken, logout } = useAuth();
+
+  // Local state to hold profile info + loading status
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /*
+    useEffect:
+    - Runs when accessToken changes.
+    - Calls backend API to fetch user profile details.
+    - Handles loading and error states.
+  */
   useEffect(() => {
     const loadProfile = async () => {
       if (!accessToken) return;
       try {
         setLoading(true);
         const data = await authAPI.getProfile(accessToken);
-        setProfile(data); // ✅ API already returns User
+        setProfile(data); //  API already returns User object
       } catch (error: any) {
         Alert.alert('Error', error.message || 'Failed to load profile');
       } finally {
@@ -32,6 +51,11 @@ export default function ProfileScreen() {
     loadProfile();
   }, [accessToken]);
 
+  /*
+    handleLogout:
+    - Calls logout from AuthContext.
+    - Handles potential errors (e.g., network or token issues).
+  */
   const handleLogout = async () => {
     try {
       await logout();
@@ -40,6 +64,9 @@ export default function ProfileScreen() {
     }
   };
 
+  /*
+    Show loading spinner while profile is being fetched
+  */
   if (loading) {
     return (
       <ProtectedRoute>
@@ -50,6 +77,9 @@ export default function ProfileScreen() {
     );
   }
 
+  /*
+    If profile data could not be loaded, display fallback message
+  */
   if (!profile) {
     return (
       <ProtectedRoute>
@@ -60,23 +90,35 @@ export default function ProfileScreen() {
     );
   }
 
-  // ✅ normalize null values
+  //  Normalize profile fields (avoid null values)
   const firstName = profile.first_name ?? '';
   const lastName = profile.last_name ?? '';
   const initials = `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
 
+  /*
+    Render profile screen:
+    - Avatar with initials
+    - Full name and email
+    - Extra info (e.g., join date placeholder)
+    - Logout button
+  */
   return (
     <ProtectedRoute>
       <ThemedView style={styles.container}>
-        {/* Avatar + Name */}
+        {/* Avatar Circle with initials */}
         <View style={styles.avatar}>
           <ThemedText style={styles.avatarText}>{initials}</ThemedText>
         </View>
+
+        {/* User name */}
         <ThemedText type="title" style={styles.name}>
           {firstName} {lastName}
         </ThemedText>
+
+        {/* User email */}
         <ThemedText style={styles.email}>{profile.email}</ThemedText>
 
+        {/* Extra info (currently only icon, text commented out) */}
         <View style={styles.infoCard}>
           <IconSymbol name="calendar" size={20} color="#6B7280" />
           {/* <ThemedText style={styles.infoText}>
@@ -84,7 +126,7 @@ export default function ProfileScreen() {
           </ThemedText> */}
         </View>
 
-        {/* Logout */}
+        {/* Logout button */}
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color="white" />
           <ThemedText style={styles.logoutText}>Logout</ThemedText>
@@ -93,6 +135,7 @@ export default function ProfileScreen() {
     </ProtectedRoute>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', padding: 24 },

@@ -1,6 +1,18 @@
 
 // app/task/[id].tsx
 
+/*
+  TaskDetailScreen
+  ----------------
+  This screen shows the details of a single task.
+
+  - Gets the task ID from the route parameter (/task/[id])
+  - Looks up the task in the global tasks context
+  - Displays the task details: title, description, status, priority, due date
+  - Provides action buttons: Edit, Mark as Complete, Archive, and Delete
+  - Handles "task not found" gracefully
+*/
+
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,16 +24,25 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Task } from '@/src/types/task';
 
 export default function TaskDetailScreen() {
+  // Get the dynamic :id param from route
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  // Router instance for navigation
   const router = useRouter();
+
+  // Task context with available actions
   const { tasks, deleteTask, markAsCompleted, archiveTask } = useTasks();
+
+  // Local state to hold the selected task
   const [task, setTask] = useState<Task | null>(null);
 
+  // When tasks or ID changes, update the selected task
   useEffect(() => {
     const found = tasks.find((t) => t.id === id);
     if (found) setTask(found);
   }, [id, tasks]);
 
+  // Handle deleting the task (with confirmation)
   const handleDelete = () => {
     Alert.alert('Delete Task', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
@@ -29,13 +50,14 @@ export default function TaskDetailScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await deleteTask(id!);
-          router.back();
+          await deleteTask(id!); // call delete function from context
+          router.back(); // go back after deletion
         },
       },
     ]);
   };
 
+  // If no matching task was found
   if (!task) {
     return (
       <ProtectedRoute>
@@ -49,12 +71,17 @@ export default function TaskDetailScreen() {
   return (
     <ProtectedRoute>
       <ScrollView style={styles.container}>
+        {/* Task Title */}
         <ThemedText type="title" style={styles.title}>
           {task.title}
         </ThemedText>
+
+        {/* Task Description (if available) */}
         {task.description && (
           <ThemedText style={styles.description}>{task.description}</ThemedText>
         )}
+
+        {/* Task Metadata */}
         <View style={styles.meta}>
           <ThemedText>Status: {task.status}</ThemedText>
           <ThemedText>Priority: {task.priority}</ThemedText>
@@ -63,8 +90,9 @@ export default function TaskDetailScreen() {
           </ThemedText>
         </View>
 
-        {/* Actions */}
+        {/* Action Buttons */}
         <View style={styles.actions}>
+          {/* Edit Task */}
           <TouchableOpacity
             style={styles.actionBtn}
             onPress={() => router.push(`/task/${task.id}/edit`)}
@@ -73,6 +101,7 @@ export default function TaskDetailScreen() {
             <ThemedText style={styles.actionText}>Edit</ThemedText>
           </TouchableOpacity>
 
+          {/* Complete Task (only if not already completed) */}
           {task.status !== 'completed' && (
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: '#10B981' }]}
@@ -83,6 +112,7 @@ export default function TaskDetailScreen() {
             </TouchableOpacity>
           )}
 
+          {/* Archive Task */}
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: '#8B5CF6' }]}
             onPress={() => archiveTask(task.id)}
@@ -91,6 +121,7 @@ export default function TaskDetailScreen() {
             <ThemedText style={styles.actionText}>Archive</ThemedText>
           </TouchableOpacity>
 
+          {/* Delete Task */}
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: '#EF4444' }]}
             onPress={handleDelete}
